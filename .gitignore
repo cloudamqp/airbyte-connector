@@ -1,0 +1,8 @@
+airbyte-connector
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+.env
