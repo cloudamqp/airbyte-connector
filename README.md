@@ -79,9 +79,3 @@ To release a new version:
 2. GitHub Actions will automatically build and push the Docker image to Docker Hub with tags:
    - `ericaweistrand/airbyte-source-amqp:1.0.0`
    - `ericaweistrand/airbyte-source-amqp:latest`
-
-### Required Secrets
-
-Set these secrets in GitHub repository settings:
-- `DOCKERHUB_USERNAME`: Docker Hub username
-- `DOCKERHUB_TOKEN`: Docker Hub access token
