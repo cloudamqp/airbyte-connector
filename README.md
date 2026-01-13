@@ -19,12 +19,12 @@ An Airbyte source connector for consuming messages from AMQP brokers (RabbitMQ, 
 The connector is available on Docker Hub:
 
 ```
-ericaweistrand/airbyte-source-amqp:latest
+cloudamqp/airbyte-source-amqp:latest
 ```
 
 To add as a custom connector in Airbyte:
 1. Go to Settings -> Sources -> + New connector
-2. Enter Docker repository: `ericaweistrand/airbyte-source-amqp`
+2. Enter Docker repository: `cloudamqp/airbyte-source-amqp`
 3. Enter Docker image tag: `latest` (or a specific version like `1.0.0`)
 
 ### Local Development
@@ -77,5 +77,9 @@ To release a new version:
    ```
 
 2. GitHub Actions will automatically build and push the Docker image to Docker Hub with tags:
-   - `ericaweistrand/airbyte-source-amqp:1.0.0`
-   - `ericaweistrand/airbyte-source-amqp:latest`
+   - `cloudamqp/airbyte-source-amqp:1.0.0`
+   - `cloudamqp/airbyte-source-amqp:latest`
+
+## License
+
+This project is licensed under the [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0).

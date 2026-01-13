@@ -6,7 +6,7 @@ on:
       - 'v*'
 
 env:
-  DOCKER_IMAGE: ericaweistrand/airbyte-source-amqp
+  DOCKER_IMAGE: cloudamqp/airbyte-source-amqp
 
 jobs:
   test:
