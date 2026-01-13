@@ -2,11 +2,13 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestSpec(t *testing.T) {
@@ -167,6 +169,32 @@ func TestEmitMessage(t *testing.T) {
 
 	if msg.Log.Message != "test message" {
 		t.Errorf("expected message 'test message', got '%s'", msg.Log.Message)
+	}
+}
+
+func TestEmitMessageReturnsError(t *testing.T) {
+	msg := AirbyteMessage{
+		Type: TypeLog,
+		Log: &LogMessage{
+			Level:   "INFO",
+			Message: "test",
+		},
+	}
+
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	err := emitMessage(msg)
+
+	w.Close()
+	os.Stdout = old
+
+	var buf bytes.Buffer
+	_, _ = io.Copy(&buf, r)
+
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
 	}
 }
 
@@ -396,7 +424,7 @@ func TestEmitMessageValidJSON(t *testing.T) {
 			EmittedAt: 1705312800000,
 		},
 	}
-	emitMessage(msg)
+	_ = emitMessage(msg)
 
 	w.Close()
 	os.Stdout = old
@@ -426,5 +454,107 @@ func TestSpecContainsAMQPSExample(t *testing.T) {
 
 	if !strings.Contains(output, "amqps://") {
 		t.Error("spec should contain amqps:// example for TLS connections")
+	}
+}
+
+func TestConstants(t *testing.T) {
+	if defaultPrefetchCount != 100 {
+		t.Errorf("expected defaultPrefetchCount to be 100, got %d", defaultPrefetchCount)
+	}
+
+	if maxReconnectAttempts != 5 {
+		t.Errorf("expected maxReconnectAttempts to be 5, got %d", maxReconnectAttempts)
+	}
+
+	if initialReconnectWait != 1*time.Second {
+		t.Errorf("expected initialReconnectWait to be 1s, got %v", initialReconnectWait)
+	}
+
+	if maxReconnectWait != 30*time.Second {
+		t.Errorf("expected maxReconnectWait to be 30s, got %v", maxReconnectWait)
+	}
+
+	if connectionTimeout != 30*time.Second {
+		t.Errorf("expected connectionTimeout to be 30s, got %v", connectionTimeout)
+	}
+}
+
+func TestNewConsumer(t *testing.T) {
+	config := Config{
+		AMQPUrl:    "amqp://localhost",
+		Exchange:   "test",
+		QueueName:  "queue",
+		StreamName: "stream",
+	}
+
+	c := newConsumer(config)
+
+	if c.config.AMQPUrl != config.AMQPUrl {
+		t.Errorf("expected AMQPUrl %s, got %s", config.AMQPUrl, c.config.AMQPUrl)
+	}
+
+	if c.done == nil {
+		t.Error("done channel should not be nil")
+	}
+
+	if c.messageCount != 0 {
+		t.Errorf("expected messageCount 0, got %d", c.messageCount)
+	}
+}
+
+func TestConsumerClose(t *testing.T) {
+	config := Config{
+		AMQPUrl:    "amqp://localhost",
+		Exchange:   "test",
+		QueueName:  "queue",
+		StreamName: "stream",
+	}
+
+	c := newConsumer(config)
+	c.close()
+}
+
+func TestConsumerConnectFailsWithInvalidURL(t *testing.T) {
+	config := Config{
+		AMQPUrl:    "amqp://invalid:invalid@localhost:99999/",
+		Exchange:   "test",
+		QueueName:  "queue",
+		StreamName: "stream",
+	}
+
+	c := newConsumer(config)
+	err := c.connect()
+
+	if err == nil {
+		t.Error("expected error for invalid connection")
+		c.close()
+	}
+}
+
+func TestConsumerReconnectRespectsContext(t *testing.T) {
+	config := Config{
+		AMQPUrl:    "amqp://invalid:invalid@localhost:99999/",
+		Exchange:   "test",
+		QueueName:  "queue",
+		StreamName: "stream",
+	}
+
+	c := newConsumer(config)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := c.reconnect(ctx)
+
+	if err == nil {
+		t.Error("expected error when context is cancelled")
+	}
+}
+
+func TestDialWithTimeout(t *testing.T) {
+	_, err := dialWithTimeout("amqp://invalid:invalid@localhost:99999/", 100*time.Millisecond)
+
+	if err == nil {
+		t.Error("expected error for invalid connection")
 	}
 }
